@@ -1,0 +1,57 @@
+-- Define the inventory path
+local inventory = game:GetService("Players").LocalPlayer.PlayerGui.InventoryUi.Main.Display.Gear.ItemScrollingFrame
+
+-- Define the remote for equipping items
+local equipRemote = game:GetService("ReplicatedStorage"):WaitForChild("remotes"):WaitForChild("equipItem")
+local dataRemoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("dataRemoteEvent")
+
+-- Function to handle the item click event
+local function onItemClick(item)
+    -- Attempt to get the UniqueId and levelReq attributes
+    local uniqueId = item:GetAttribute("UniqueId")  -- Get UniqueId
+    local levelReq = item:GetAttribute("levelReq")  -- Get levelReq attribute
+
+    if uniqueId then
+        -- Set item attributes before firing the remote
+        item:SetAttribute("Equipped", true)  -- Mark as equipped
+        item:SetAttribute("Level", 1)        -- Set the Level to 1 (or your preferred value)
+        item:SetAttribute("levelReq", 1)     -- Set levelReq to 1 (or your preferred value)
+
+        -- Prepare the arguments with the simplified structure
+        local args = {
+            [1] = {
+                [1] = {
+                    [1] = "\1",
+                    [2] = {
+                        data = {
+                            uniqueId = uniqueId,      -- Use the UniqueId of the clicked item
+                            levelReq = levelReq,      -- Use the levelReq attribute
+                        }
+                    }
+                },
+                [2] = "\31"
+            }
+        }
+
+        -- Fire the remote with the prepared arguments
+        dataRemoteEvent:FireServer(unpack(args))
+
+        -- Also fire the equip remote with updated attributes
+        equipRemote:FireServer({
+            uniqueId = uniqueId,
+            level = item:GetAttribute("Level"),
+            levelReq = item:GetAttribute("levelReq"),
+            equipped = item:GetAttribute("Equipped")
+        })
+    end
+end
+
+-- Loop through the inventory and add click listeners to each item
+for _, item in ipairs(inventory:GetChildren()) do
+    if item:IsA("TextButton") then
+        -- Add a MouseButton1Click event listener for the item
+        item.MouseButton1Click:Connect(function()
+            onItemClick(item)  -- Trigger the equip logic when the item is clicked
+        end)
+    end
+end
